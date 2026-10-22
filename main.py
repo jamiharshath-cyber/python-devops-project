@@ -14,3 +14,4 @@ def get_products():
             {"id": 2, "name": "Mobile", "price": 500}
         ]
     }
+# Testing automatic CI pipeline trigger
