@@ -19,3 +19,7 @@ steps:
   - script: |
       python -m pytest -v
     displayName: 'Run automated tests'
+
+  - script: |
+    docker build -t python-devops-app:latest -f dockerfile .
+    displayName: 'Build Docker image'
