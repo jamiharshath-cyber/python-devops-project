@@ -2,35 +2,62 @@
 trigger:
   - main
 
-pool:
-  vmImage: 'ubuntu-latest'
+jobs:
+  # JOB 1: Continuous Integration
+  - job: Build
+    displayName: 'Build, Test and Push Docker Image'
+    pool:
+      vmImage: 'ubuntu-latest'
 
-steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.11'
-    displayName: 'Set up Python'
+    steps:
+      - checkout: self
 
-  - script: |
-      python -m pip install --upgrade pip
-      pip install -r requirements.txt
-    displayName: 'Install dependencies'
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.11'
+        displayName: 'Set up Python'
 
-  - script: |
-      python -m pytest -v
-    displayName: 'Run automated tests'
+      - script: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        displayName: 'Install dependencies'
 
-  - script: |
-      docker build -t python-devops-app:latest -f dockerfile .
-    displayName: 'Build Docker image'
+      - script: |
+          python -m pytest -v
+        displayName: 'Run automated tests'
 
-  - task: Docker@2
-    displayName: 'Push Docker image to Docker Hub'
-    inputs:
-      containerRegistry: 'dockerhub-connection'
-      repository: 'harshathjami/python-devops-app'
-      command: 'buildAndPush'
-      Dockerfile: '$(Build.SourcesDirectory)/dockerfile'
-      buildContext: '$(Build.SourcesDirectory)'
-      tags: |
-        latest
+      - task: Docker@2
+        displayName: 'Build and Push Docker Image'
+        inputs:
+          containerRegistry: 'dockerhub-connection'
+          repository: 'harshathjami/python-devops-app'
+          command: 'buildAndPush'
+          Dockerfile: '$(Build.SourcesDirectory)/dockerfile'
+          buildContext: '$(Build.SourcesDirectory)'
+          tags: |
+            latest
+
+  # JOB 2: Continuous Deployment
+  - job: Deploy
+    displayName: 'Deploy Docker Container on Mac'
+    dependsOn: Build
+    condition: succeeded()
+
+    pool:
+      name: Default
+      demands:
+        - Agent.OS -equals Darwin
+
+    steps:
+      - checkout: self
+
+      - script: |
+          chmod +x deploy.sh
+          ./deploy.sh
+        displayName: 'Run Docker Deployment Script'
+
+      - script: |
+          docker ps
+          docker inspect --format='{{.State.Running}}' python-devops-container
+          curl --fail --retry 5 --retry-delay 2 http://localhost:8000/
+        displayName: 'Verify Docker Deployment'
