@@ -56,17 +56,16 @@ jobs:
           ./deploy.sh
         displayName: 'Run Docker Deployment Script'
 
-  - script: |
-        echo "Checking Docker container..."
-        docker ps
+      - script: |
+          echo "Checking Docker container..."
+          docker ps
 
-        echo "Checking container status..."
-        docker inspect --format='{{.State.Running}}' python-devops-container
+          echo "Checking container status..."
+          docker inspect --format='{{.State.Running}}' python-devops-container
 
-        echo "Waiting for application to start..."
-        sleep 10
+          echo "Waiting for application to start..."
+          sleep 10
 
-        echo "Testing application..."
-        curl --fail --retry 10 --retry-all-errors --retry-delay 3 http://localhost:8000/
-
+          echo "Testing application..."
+          curl --fail --retry 5 --retry-delay 2 http://localhost:8000/
         displayName: 'Verify Docker Deployment'
