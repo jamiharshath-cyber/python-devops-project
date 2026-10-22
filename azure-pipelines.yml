@@ -23,3 +23,14 @@ steps:
   - script: |
       docker build -t python-devops-app:latest -f dockerfile .
     displayName: 'Build Docker image'
+
+  - task: Docker@2
+    displayName: 'Push Docker image to Docker Hub'
+    inputs:
+      containerRegistry: 'dockerhub-connection'
+      repository: 'harshathjami/python-devops-app'
+      command: 'buildAndPush'
+      Dockerfile: '$(Build.SourcesDirectory)/dockerfile'
+      buildContext: '$(Build.SourcesDirectory)'
+      tags: |
+        latest
