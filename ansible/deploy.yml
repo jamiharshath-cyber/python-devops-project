@@ -1,0 +1,73 @@
+
+---
+- name: Deploy FastAPI application locally
+  hosts: local
+  connection: local
+  gather_facts: false
+
+  vars:
+    project_dir: "{{ playbook_dir }}/.."
+    image_name: python-devops-secure
+    container_name: python-devops-ansible
+    host_port: 8002
+
+  tasks:
+    - name: Build secure FastAPI Docker image
+      ansible.builtin.command:
+        argv:
+          - docker
+          - build
+          - -f
+          - dockerfile
+          - -t
+          - "{{ image_name }}"
+          - .
+        chdir: "{{ project_dir }}"
+      changed_when: true
+
+    - name: Check if deployment container exists
+      ansible.builtin.command:
+        argv:
+          - docker
+          - container
+          - inspect
+          - "{{ container_name }}"
+      register: container_check
+      failed_when: false
+      changed_when: false
+
+    - name: Remove existing deployment container
+      ansible.builtin.command:
+        argv:
+          - docker
+          - rm
+          - -f
+          - "{{ container_name }}"
+      when: container_check.rc == 0
+
+    - name: Start FastAPI container
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - -d
+          - --name
+          - "{{ container_name }}"
+          - -p
+          - "127.0.0.1:{{ host_port }}:8000"
+          - "{{ image_name }}"
+      changed_when: true
+
+    - name: Verify FastAPI application responds
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ host_port }}/"
+        status_code: 200
+      register: app_response
+      retries: 10
+      delay: 2
+      until: app_response.status == 200
+
+    - name: Show deployment result
+      ansible.builtin.debug:
+        msg: "FastAPI deployed at http://localhost:{{ host_port }}"
+
