@@ -7,23 +7,26 @@ jobs:
   - job: Build
     displayName: 'Build, Test and Push Docker Image'
     pool:
-      vmImage: 'ubuntu-latest'
+      name: Default
+      demands:
+         - Agent.OS -equals Darwin
 
     steps:
       - checkout: self
 
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: '3.11'
-        displayName: 'Set up Python'
+      - script: |
+          /opt/homebrew/bin/python3.11 --version
+          /opt/homebrew/bin/python3.11 -m pip --version
+        displayName: 'Verify Python 3.11'
 
       - script: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          /opt/homebrew/bin/python3.11 -m venv .pipeline-venv
+          .pipeline-venv/bin/python -m pip install --upgrade pip
+          .pipeline-venv/bin/python -m pip install -r requirements.txt
         displayName: 'Install dependencies'
 
       - script: |
-          python -m pytest -v
+          .pipeline-venv/bin/python -m pytest -v
         displayName: 'Run automated tests'
 
       - task: Docker@2

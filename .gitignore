@@ -32,3 +32,4 @@ dist/
 *.egg-info/
 # SonarQube temporary files
 .scannerwork/
+.pipeline-venv/
