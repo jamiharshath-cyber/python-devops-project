@@ -30,3 +30,5 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+# SonarQube temporary files
+.scannerwork/
